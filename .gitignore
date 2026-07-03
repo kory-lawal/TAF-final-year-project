@@ -8,6 +8,7 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+app/last_tts_payload.json
 
 # Subagent-driven-development scratch (git-ignored working area)
 .superpowers/

@@ -31,7 +31,8 @@ else:
     st.caption("🔴 Nigerian Languages API unavailable — using local data only")
 
 # Language dropdown driven live from the API, with a local fallback.
-_lang_choices = language_options(_api_languages, ["yoruba", "igbo", "hausa"])
+_LOCAL_LANGS = ["yoruba", "igbo", "hausa"]
+_lang_choices = language_options(_api_languages, _LOCAL_LANGS, allowed=_LOCAL_LANGS)
 language = st.selectbox("Select Language", _lang_choices, key='language')
 
 # Voice override selector (Auto uses best-effort candidates)
@@ -166,15 +167,19 @@ if text_to_display:
                     continue
                 st.markdown(f"**{row['word']}**")
                 for match in row["matches"]:
-                    label = (
-                        "definition" if match["kind"] == "definition"
-                        else "corpus example"
-                    )
-                    meta = " · ".join(
-                        p for p in [match.get("dialect_name"), match.get("pos")]
-                        if p
-                    )
-                    gloss = match.get("gloss") or "—"
+                    if match["kind"] == "definition":
+                        label = "definition"
+                        meta = " · ".join(
+                            p for p in [match.get("dialect_name"), match.get("pos")]
+                            if p
+                        )
+                        # Fall back to the headword rather than a bare dash.
+                        gloss = match.get("gloss") or match.get("headword") or "—"
+                    else:
+                        label = "corpus example"
+                        # Drop the redundant "sentence" pos for corpus rows.
+                        meta = match.get("dialect_name") or ""
+                        gloss = match.get("gloss") or "—"
                     st.markdown(f"- _{label}_ ({meta}): {gloss}")
         st.caption(
             "Word data provided by the Nigerian Languages API "

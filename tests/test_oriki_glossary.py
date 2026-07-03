@@ -100,3 +100,18 @@ def test_respects_max_lookups_and_flags_truncation():
     assert result["truncated"] is True
     assert result["total_words"] == 5
     assert client.search_calls == [("a", "igbo"), ("b", "igbo")]
+
+
+def test_language_options_filters_to_allowed():
+    api = [{"name": "Yoruba"}, {"name": "Igbo"}, {"name": "Edo"}]
+    # Edo has no local CSV -> filtered out when allowed is given.
+    assert og.language_options(
+        api, ["yoruba", "igbo", "hausa"], allowed=["yoruba", "igbo", "hausa"]
+    ) == ["yoruba", "igbo"]
+
+
+def test_language_options_empty_intersection_falls_back():
+    api = [{"name": "Edo"}]
+    assert og.language_options(
+        api, ["yoruba", "igbo", "hausa"], allowed=["yoruba", "igbo", "hausa"]
+    ) == ["yoruba", "igbo", "hausa"]

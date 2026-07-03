@@ -22,13 +22,16 @@ def tokenize(text):
     return tokens
 
 
-def language_options(api_languages, fallback):
+def language_options(api_languages, fallback, allowed=None):
     names = [
         str(lang.get("name", "")).lower()
         for lang in api_languages
         if lang.get("name")
     ]
     names = [n for n in names if n]
+    if allowed is not None:
+        allowed_set = {str(a).lower() for a in allowed}
+        names = [n for n in names if n in allowed_set]
     return names or list(fallback)
 
 
