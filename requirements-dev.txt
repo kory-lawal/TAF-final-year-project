@@ -1,1 +1,2 @@
 pytest>=8.0
+python-docx>=1.1  # used by scripts/import_oriki_docx.py to build yoruba.csv
