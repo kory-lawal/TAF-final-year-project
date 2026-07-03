@@ -30,7 +30,7 @@ def inject_theme():
   --serif:'Gentium Plus',Georgia,serif; --sans:'Space Grotesk',system-ui,sans-serif;
 }
 html,body,[class*="css"],.stApp{background:var(--bg);color:var(--ink);font-family:var(--sans);}
-.block-container{max-width:1180px;padding-top:2.2rem;}
+.block-container{max-width:1180px;padding-top:3.75rem;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 @keyframes breathe{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.55;transform:scale(.82);}}
 @keyframes shimmer{0%{background-position:-320px 0;}100%{background-position:320px 0;}}
@@ -40,7 +40,7 @@ html,body,[class*="css"],.stApp{background:var(--bg);color:var(--ink);font-famil
 .masthead{display:flex;justify-content:space-between;align-items:flex-end;gap:1.5rem;
   border-bottom:1px solid var(--line);padding-bottom:1.4rem;margin-bottom:1.8rem;flex-wrap:wrap;}
 .kicker{font-family:var(--sans);font-size:.72rem;font-weight:600;letter-spacing:.22em;
-  text-transform:uppercase;color:var(--accent);}
+  line-height:1.5;text-transform:uppercase;color:var(--accent);}
 .display{font-family:var(--serif);font-weight:700;font-size:clamp(2.6rem,6vw,4.2rem);
   line-height:.95;letter-spacing:-.01em;margin:.3rem 0 .4rem;color:var(--ink);}
 .lede{font-family:var(--sans);color:var(--muted);font-size:1rem;max-width:52ch;line-height:1.6;margin:0;}
@@ -55,7 +55,7 @@ html,body,[class*="css"],.stApp{background:var(--bg);color:var(--ink);font-famil
 .rail-title{font-family:var(--sans);font-size:.72rem;font-weight:600;letter-spacing:.18em;
   text-transform:uppercase;color:var(--muted);margin:0 0 .2rem;}
 /* Buttons */
-.stButton>button{font-family:var(--sans);font-weight:600;border-radius:10px;
+.stButton>button{font-family:var(--sans);font-weight:600;border-radius:10px;min-height:44px;
   border:1px solid var(--accent);background:var(--accent);color:#fff;
   transition:transform .12s ease, box-shadow .2s ease;box-shadow:0 6px 16px -8px rgba(181,80,46,.6);}
 .stButton>button:hover{background:#a3472a;border-color:#a3472a;color:#fff;}
@@ -71,6 +71,15 @@ html,body,[class*="css"],.stApp{background:var(--bg);color:var(--ink);font-famil
 .skeleton .shimmer{height:14px;border-radius:6px;margin:.5rem 0;
   background:linear-gradient(90deg,var(--line) 0%,#f3efe8 50%,var(--line) 100%);
   background-size:640px 100%;animation:shimmer 1.3s infinite linear;}
+/* Mobile / tablet: collapse the asymmetric columns into a single stack */
+@media (max-width: 768px){
+  .block-container{padding-top:2.75rem;padding-left:1rem;padding-right:1rem;}
+  [data-testid="stHorizontalBlock"]{flex-direction:column;gap:1.25rem;}
+  [data-testid="stColumn"]{width:100%!important;flex:1 1 100%!important;min-width:0!important;}
+  .masthead{margin-bottom:1.4rem;padding-bottom:1.1rem;}
+  .masthead-right{margin-top:.2rem;}
+  .stButton>button{width:100%;}
+}
 /* Respect users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce){
   .masthead,.rail-block,.stage-wrap{animation:none;}
