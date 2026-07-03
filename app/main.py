@@ -25,7 +25,7 @@ def inject_theme():
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Gentium+Plus:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 :root{
-  --bg:#faf8f5; --surface:#ffffff; --ink:#1c1a17; --muted:#6b6459;
+  --bg:#faf8f5; --surface:#ffffff; --ink:#1c1a17; --muted:#5c5347;
   --line:#e7e2da; --accent:#b5502e; --accent-weak:#f0e0d8; --ok:#1f6f52;
   --serif:'Gentium Plus',Georgia,serif; --sans:'Space Grotesk',system-ui,sans-serif;
 }
@@ -60,6 +60,7 @@ html,body,[class*="css"],.stApp{background:var(--bg);color:var(--ink);font-famil
   transition:transform .12s ease, box-shadow .2s ease;box-shadow:0 6px 16px -8px rgba(181,80,46,.6);}
 .stButton>button:hover{background:#a3472a;border-color:#a3472a;color:#fff;}
 .stButton>button:active{transform:translateY(1px);}
+.stButton>button:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
 /* Word breakdown list */
 .gloss-list{border-top:1px solid var(--line);}
 .gloss-row{border-bottom:1px solid var(--line);padding:.9rem 0;}
@@ -70,6 +71,13 @@ html,body,[class*="css"],.stApp{background:var(--bg);color:var(--ink);font-famil
 .skeleton .shimmer{height:14px;border-radius:6px;margin:.5rem 0;
   background:linear-gradient(90deg,var(--line) 0%,#f3efe8 50%,var(--line) 100%);
   background-size:640px 100%;animation:shimmer 1.3s infinite linear;}
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .masthead,.rail-block,.stage-wrap{animation:none;}
+  .pill .dot{animation:none;}
+  .skeleton .shimmer{animation:none;}
+  .stButton>button{transition:none;}
+}
 </style>
         """,
         unsafe_allow_html=True,
@@ -105,7 +113,7 @@ def render_stage(text, audio_bytes):
     if not text:
         components.html(
             """
-<div style="font-family:'Space Grotesk',system-ui,sans-serif;color:#6b6459;
+<div style="font-family:'Space Grotesk',system-ui,sans-serif;color:#5c5347;
   background:#fff;border:1px dashed #e7e2da;border-radius:18px;
   padding:48px 28px;text-align:center;line-height:1.6;">
   <div style="font-family:'Gentium Plus',Georgia,serif;font-size:1.5rem;color:#1c1a17;margin-bottom:.4rem;">Oríkì</div>
