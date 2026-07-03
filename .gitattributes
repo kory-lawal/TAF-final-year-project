@@ -1,0 +1,6 @@
+# Treat binary assets as binary so Git never applies EOL/text filters to them.
+*.mp3 binary
+*.wav binary
+*.docx binary
+*.png binary
+*.jpg binary
