@@ -1,3 +1,4 @@
+import copy
 import requests
 
 from app.config import NLA_API_URL, NLA_TIMEOUT_CONNECT, NLA_TIMEOUT_READ
@@ -17,10 +18,10 @@ def _timeout():
 
 
 def _get_json(path, params=None):
-    """GET NLA_API_URL+path, return parsed JSON or None. Never raises."""
+    """GET NLA_API_URL+path, return parsed JSON (a fresh copy) or None. Never raises."""
     key = (path, tuple(sorted((params or {}).items())))
     if key in _cache:
-        return _cache[key]
+        return copy.deepcopy(_cache[key])
     try:
         resp = _session.get(
             f"{NLA_API_URL}{path}", params=params, timeout=_timeout()
@@ -31,7 +32,7 @@ def _get_json(path, params=None):
     except (requests.RequestException, ValueError):
         return None
     _cache[key] = data  # cache only successful responses
-    return data
+    return copy.deepcopy(data)
 
 
 def get_languages():

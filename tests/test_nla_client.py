@@ -99,3 +99,14 @@ def test_is_api_available(monkeypatch):
     nla_client.clear_cache()
     _install(monkeypatch, [requests.RequestException("down")])
     assert nla_client.is_api_available() is False
+
+
+def test_failed_lookup_is_not_cached_then_retry_succeeds(monkeypatch):
+    # First call fails, second call for the SAME key succeeds.
+    session = _install(monkeypatch, [
+        requests.RequestException("down"),
+        FakeResp(200, [{"name": "Yoruba"}]),
+    ])
+    assert nla_client.get_languages() == []                     # failure -> empty
+    assert nla_client.get_languages() == [{"name": "Yoruba"}]   # retry hits network
+    assert len(session.calls) == 2                              # failure was NOT cached
