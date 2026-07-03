@@ -11,6 +11,8 @@ import html as _html
 import streamlit.components.v1 as components
 from app.services.oriki_service import get_oriki, generate_smart_oriki
 from app.services.tts import text_to_speech, get_voice_candidates, is_yarngpt_api_available
+from app.services import nla_client
+from app.services.oriki_glossary import build_glossary, language_options
 
 st.title("AI Indigenous Oríkì Generator")
 
@@ -21,8 +23,16 @@ if 'language' not in st.session_state:
 if 'voice' not in st.session_state:
     st.session_state['voice'] = 'Auto'
 
-# Short sample phrases per language used for accent/voice preview
-language = st.selectbox("Select Language", ["yoruba", "igbo", "hausa"], key='language')
+# Live connection status to the Nigerian Languages API (visible proof).
+_api_languages = nla_client.get_languages()
+if _api_languages:
+    st.caption("🟢 Connected to the Nigerian Languages API")
+else:
+    st.caption("🔴 Nigerian Languages API unavailable — using local data only")
+
+# Language dropdown driven live from the API, with a local fallback.
+_lang_choices = language_options(_api_languages, ["yoruba", "igbo", "hausa"])
+language = st.selectbox("Select Language", _lang_choices, key='language')
 
 # Voice override selector (Auto uses best-effort candidates)
 voice_choices = ["Auto"] + get_voice_candidates(language)
@@ -132,6 +142,44 @@ if (dataUrl) {
     components.html(html, height=420)
 
 render_oriki_component(text_to_display, audio_bytes)
+
+# --- Word Breakdown / Glossary (powered by the Nigerian Languages API) ---
+if text_to_display:
+    with st.expander("Word breakdown (powered by the Nigerian Languages API)"):
+        if not _api_languages:
+            st.info(
+                "The Nigerian Languages API is unavailable right now, so the "
+                "word breakdown can't load. Oríkì generation and audio still work."
+            )
+        else:
+            with st.spinner("Looking up words in the Nigerian Languages API…"):
+                glossary = build_glossary(text_to_display, language, nla_client)
+            rows = glossary["rows"]
+            if glossary["truncated"]:
+                st.caption(
+                    f"Showing the first {len(rows)} of "
+                    f"{glossary['total_words']} words."
+                )
+            for row in rows:
+                if row["status"] != "found":
+                    st.markdown(f"**{row['word']}** — _no dictionary/corpus match_")
+                    continue
+                st.markdown(f"**{row['word']}**")
+                for match in row["matches"]:
+                    label = (
+                        "definition" if match["kind"] == "definition"
+                        else "corpus example"
+                    )
+                    meta = " · ".join(
+                        p for p in [match.get("dialect_name"), match.get("pos")]
+                        if p
+                    )
+                    gloss = match.get("gloss") or "—"
+                    st.markdown(f"- _{label}_ ({meta}): {gloss}")
+        st.caption(
+            "Word data provided by the Nigerian Languages API "
+            "(dara-ze5e.onrender.com)."
+        )
 
 # accent preview removed per user request
 
