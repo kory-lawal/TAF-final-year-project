@@ -101,6 +101,35 @@ def test_is_api_available(monkeypatch):
     assert nla_client.is_api_available() is False
 
 
+def test_get_praise_by_name_hits_praise_endpoint(monkeypatch):
+    rows = [{"headword": "Ade", "metadata": {"praise_text": "Adé ọmọ ọlá"}}]
+    session = _install(monkeypatch, [FakeResp(200, rows)])
+    out = nla_client.get_praise(name="Ade", language="yoruba")
+    assert out == rows
+    url, params, _ = session.calls[0]
+    assert url.endswith("/api/praise")
+    assert params == {"language": "yoruba", "q": "Ade"}
+
+
+def test_get_praise_without_name_hits_random_endpoint(monkeypatch):
+    row = {"headword": "Bola", "metadata": {"praise_text": "Bọ́lá ọmọ ọlá"}}
+    session = _install(monkeypatch, [FakeResp(200, row)])
+    out = nla_client.get_praise(language="yoruba")
+    assert out == [row]  # single object wrapped into a one-item list
+    url, _params, _ = session.calls[0]
+    assert url.endswith("/api/praise/random")
+
+
+def test_get_praise_no_match_returns_empty(monkeypatch):
+    _install(monkeypatch, [FakeResp(200, [])])
+    assert nla_client.get_praise(name="Zzzznope") == []
+
+
+def test_get_praise_error_returns_empty(monkeypatch):
+    _install(monkeypatch, [requests.RequestException("down")])
+    assert nla_client.get_praise(name="Ade") == []
+
+
 def test_failed_lookup_is_not_cached_then_retry_succeeds(monkeypatch):
     # First call fails, second call for the SAME key succeeds.
     session = _install(monkeypatch, [

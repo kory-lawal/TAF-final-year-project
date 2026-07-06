@@ -10,7 +10,7 @@ import streamlit as st
 import base64
 import html as _html
 import streamlit.components.v1 as components
-from app.services.oriki_service import get_oriki, generate_smart_oriki
+from app.services.oriki_service import get_oriki_result
 from app.services.tts import text_to_speech, get_voice_candidates, is_yarngpt_api_available
 from app.services import nla_client
 from app.services.oriki_glossary import build_glossary, language_options
@@ -187,6 +187,22 @@ if (dataUrl) {
     components.html(html, height=460)
 
 
+def render_error_state(title, subtitle):
+    """Editorial error card for 'no oríkì found' / 'service unavailable' states."""
+    components.html(
+        f"""
+<div style="font-family:'Space Grotesk',system-ui,sans-serif;color:#5c5347;
+  background:#fff;border:1px dashed #d9b3a6;border-radius:18px;
+  padding:44px 28px;text-align:center;line-height:1.6;">
+  <div style="font-family:'Gentium Plus',Georgia,serif;font-size:1.45rem;
+    color:#b5502e;margin-bottom:.5rem;">{_html.escape(title)}</div>
+  <div style="max-width:42ch;margin:0 auto;">{_html.escape(subtitle)}</div>
+</div>
+        """,
+        height=240,
+    )
+
+
 def _gloss_row_html(row):
     """Render one Word Breakdown row as a hairline-divided list item."""
     if row["status"] != "found":
@@ -266,8 +282,13 @@ with rail:
     name = st.text_input("Your name (optional)")
 
     if st.button("Generate Oríkì"):
-        result = get_oriki(language, name) if name else generate_smart_oriki(language)
-        st.session_state['last_result'] = result
+        res = get_oriki_result(language, name or None)
+        st.session_state['last_result'] = res.get('text') or ""
+        st.session_state['last_status'] = res.get('status')
+        st.session_state['last_name'] = res.get('name')
+        st.session_state['last_meaning'] = res.get('meaning')
+        st.session_state['last_source'] = res.get('source')
+        st.session_state.pop('last_audio', None)  # drop stale audio for the new poem
 
     if st.button("Play audio", key='play_audio'):
         if st.session_state.get('last_result'):
@@ -288,10 +309,32 @@ with rail:
 
 with stage:
     st.markdown('<div class="stage-wrap">', unsafe_allow_html=True)
-    render_stage(
-        st.session_state.get('last_result', ''),
-        st.session_state.get('last_audio', b""),
-    )
+    _status = st.session_state.get('last_status')
+    if _status == 'not_found':
+        _nm = st.session_state.get('last_name')
+        if _nm:
+            render_error_state(
+                f'No oríkì for "{_nm}" yet',
+                "We don't have a praise poem for that name in the collection "
+                "yet. Try another name, or leave the name blank for a random "
+                "oríkì.")
+        else:
+            render_error_state(
+                'No oríkì available',
+                'The collection returned no praise poem. Please try again.')
+    elif _status == 'unavailable':
+        render_error_state(
+            'Oríkì service unavailable',
+            'The Nigerian Languages API is unreachable right now and no local '
+            'oríkì is available. Please try again shortly.')
+    else:
+        render_stage(
+            st.session_state.get('last_result', ''),
+            st.session_state.get('last_audio', b""),
+        )
+        _meaning = st.session_state.get('last_meaning')
+        if _meaning and st.session_state.get('last_result'):
+            st.caption(f"Meaning: {_meaning}")
     st.markdown('</div>', unsafe_allow_html=True)
 
 render_breakdown(

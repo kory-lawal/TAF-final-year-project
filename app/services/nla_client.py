@@ -60,5 +60,25 @@ def get_entry(entry_id):
     return data if isinstance(data, dict) else None
 
 
+def get_praise(name=None, language=None):
+    """Fetch oríkì (praise poetry) from the NLA /api/praise endpoints.
+
+    With `name`: GET /api/praise?q=<name> — a substring match on the praised
+    subject — and returns the list of matching oríkì rows (each row carries
+    its full text under `metadata.praise_text`). Without a name: GET
+    /api/praise/random and returns a one-item list. Returns [] on any
+    failure or when nothing matches. Never raises.
+    """
+    params = {}
+    if language:
+        params["language"] = language
+    if name:
+        params["q"] = name
+        data = _get_json("/api/praise", params)
+        return data if isinstance(data, list) else []
+    data = _get_json("/api/praise/random", params)
+    return [data] if isinstance(data, dict) else []
+
+
 def is_api_available():
     return len(get_languages()) > 0
