@@ -10,14 +10,37 @@ except Exception:
     # dotenv not installed or .env not present; environment variables may be set elsewhere
     pass
 
-# Use environment variable for API key so secrets are not in source
-API_KEY = os.environ.get('YARNGPT_API_KEY')
+def _get_setting(name, default=None):
+    """Return a value from Streamlit secrets, then environment variables, then a default."""
+    try:
+        import streamlit as st
+    except Exception:
+        st = None
+
+    if st is not None:
+        try:
+            secrets = getattr(st, "secrets", None)
+            if secrets:
+                value = secrets.get(name)
+                if value not in (None, ""):
+                    return value
+        except Exception:
+            pass
+
+    value = os.environ.get(name)
+    if value not in (None, ""):
+        return value
+    return default
+
+
+# Use Streamlit secrets or environment variables so the key stays out of source control.
+API_KEY = _get_setting('YARNGPT_API_KEY')
 # Allow overriding the TTS endpoint (tools use YARNGPT_TTS_URL)
-API_URL = os.environ.get('YARNGPT_TTS_URL', 'https://yarngpt.ai/api/v1/tts')
+API_URL = _get_setting('YARNGPT_TTS_URL', 'https://yarngpt.ai/api/v1/tts')
 # YarnGPT can take ~60s to synthesize a long oríkì; a 30s timeout made the
 # first attempt fail on long poems (e.g. town oríkì), so callers saw "TTS
 # failed". Give each attempt room to finish. Override with YARNGPT_TIMEOUT.
-TTS_TIMEOUT = int(os.environ.get('YARNGPT_TIMEOUT', '90'))
+TTS_TIMEOUT = int(_get_setting('YARNGPT_TIMEOUT', '90'))
 
 # Top-level voice candidates and language codes (editable)
 VOICE_CANDIDATES = {

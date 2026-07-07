@@ -17,6 +17,45 @@ from app.services.oriki_glossary import build_glossary, language_options
 
 st.set_page_config(page_title="Oríkì — Indigenous Praise Poetry", layout="wide")
 
+# Per-language, in-language copy for the empty/error and loading states.
+# Every user-facing status shows in the language being used — never English.
+PRAISE_MSGS = {
+    'yoruba': {
+        'not_found_title': 'A ò rí oríkì',
+        'not_found_sub': 'A kò tíì ní oríkì fún èyí nínú àkójọ wa. '
+                         'Gbìyànjú orúkọ tàbí ọ̀rọ̀ mìíràn.',
+        'unavailable_title': 'Ìsopọ̀ kò sí',
+        'unavailable_sub': 'A kò lè dé àkójọ oríkì náà nísinsìnyí. '
+                           'Gbìyànjú lẹ́ẹ̀kansi.',
+        'loading': 'Ń pèsè ohùn oríkì…',
+        'audio_failed': 'Ohùn kò ṣeé ṣe nísinsìnyí. Gbìyànjú lẹ́ẹ̀kansi.',
+    },
+    'igbo': {
+        'not_found_title': 'Anyị ahụghị otuto',
+        'not_found_sub': 'Anyị enwebeghị otuto maka nke a. '
+                         'Nwaa aha maọbụ okwu ọzọ.',
+        'unavailable_title': 'Ọrụ adịghị',
+        'unavailable_sub': 'Anyị enweghị ike iru na nchekwa otuto ugbu a. '
+                           'Nwaa ọzọ.',
+        'loading': 'Na-akwado olu otuto…',
+        'audio_failed': 'Olu enweghị ike ime ugbu a. Nwaa ọzọ.',
+    },
+    'hausa': {
+        'not_found_title': 'Ba mu sami kirari ba',
+        'not_found_sub': 'Ba mu da kirari don wannan a tarinmu tukuna. '
+                         'Gwada wani suna ko kalma.',
+        'unavailable_title': 'Sabis baya aiki',
+        'unavailable_sub': 'Ba za mu iya kai ga tarin kirari yanzu ba. '
+                           'Sake gwadawa.',
+        'loading': 'Ana shirya muryar kirari…',
+        'audio_failed': 'Ba a iya yin sauti yanzu ba. Sake gwadawa.',
+    },
+}
+
+
+def _msg(lang):
+    return PRAISE_MSGS.get((lang or 'yoruba').lower(), PRAISE_MSGS['yoruba'])
+
 
 def inject_theme():
     """Inject the 'Clay' editorial-heritage theme: fonts, tokens, motion, widget overrides."""
@@ -288,18 +327,25 @@ with rail:
         st.session_state['last_name'] = res.get('name')
         st.session_state['last_meaning'] = res.get('meaning')
         st.session_state['last_source'] = res.get('source')
+        st.session_state['last_language'] = language  # so states show in this language
         st.session_state.pop('last_audio', None)  # drop stale audio for the new poem
 
     if st.button("Play audio", key='play_audio'):
         if st.session_state.get('last_result'):
+            # Use the language the current poem was generated in.
+            audio_lang = st.session_state.get('last_language', language)
             selected_voice = st.session_state.get('voice')
             if selected_voice == 'Auto':
                 selected_voice = None
-            audio = text_to_speech(st.session_state['last_result'], language, voice=selected_voice)
+            # A proper, in-language loading state — YarnGPT can take ~30-60s
+            # on a long poem, so the user sees it working, in their language.
+            with st.spinner(_msg(audio_lang)['loading']):
+                audio = text_to_speech(
+                    st.session_state['last_result'], audio_lang, voice=selected_voice)
             if audio:
                 st.session_state['last_audio'] = audio
             else:
-                st.error("Text-to-speech failed. Set `YARNGPT_API_KEY` or install `gTTS`.")
+                st.error(_msg(audio_lang)['audio_failed'])
         else:
             st.warning("Generate an Oríkì first.")
 
@@ -310,23 +356,14 @@ with rail:
 with stage:
     st.markdown('<div class="stage-wrap">', unsafe_allow_html=True)
     _status = st.session_state.get('last_status')
+    _lang = st.session_state.get('last_language',
+                                 st.session_state.get('language', 'yoruba'))
+    _m = _msg(_lang)
     if _status == 'not_found':
-        _nm = st.session_state.get('last_name')
-        if _nm:
-            render_error_state(
-                f'No oríkì for "{_nm}" yet',
-                "We don't have a praise poem for that name in the collection "
-                "yet. Try another name, or leave the name blank for a random "
-                "oríkì.")
-        else:
-            render_error_state(
-                'No oríkì available',
-                'The collection returned no praise poem. Please try again.')
+        # In-language "no praise found" message for the language in use.
+        render_error_state(_m['not_found_title'], _m['not_found_sub'])
     elif _status == 'unavailable':
-        render_error_state(
-            'Oríkì service unavailable',
-            'The Nigerian Languages API is unreachable right now and no local '
-            'oríkì is available. Please try again shortly.')
+        render_error_state(_m['unavailable_title'], _m['unavailable_sub'])
     else:
         render_stage(
             st.session_state.get('last_result', ''),
