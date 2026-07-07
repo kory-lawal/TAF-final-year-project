@@ -14,6 +14,10 @@ except Exception:
 API_KEY = os.environ.get('YARNGPT_API_KEY')
 # Allow overriding the TTS endpoint (tools use YARNGPT_TTS_URL)
 API_URL = os.environ.get('YARNGPT_TTS_URL', 'https://yarngpt.ai/api/v1/tts')
+# YarnGPT can take ~60s to synthesize a long oríkì; a 30s timeout made the
+# first attempt fail on long poems (e.g. town oríkì), so callers saw "TTS
+# failed". Give each attempt room to finish. Override with YARNGPT_TIMEOUT.
+TTS_TIMEOUT = int(os.environ.get('YARNGPT_TIMEOUT', '90'))
 
 # Top-level voice candidates and language codes (editable)
 VOICE_CANDIDATES = {
@@ -134,7 +138,7 @@ def _yarngpt_tts(text, language, voice=None):
     for payload in unique_attempts:
         info = {'payload': payload}
         try:
-            resp = requests.post(url, json=payload, headers=headers, timeout=30)
+            resp = requests.post(url, json=payload, headers=headers, timeout=TTS_TIMEOUT)
             info['status_code'] = resp.status_code
             ct = resp.headers.get('Content-Type', '')
             info['content_type'] = ct
